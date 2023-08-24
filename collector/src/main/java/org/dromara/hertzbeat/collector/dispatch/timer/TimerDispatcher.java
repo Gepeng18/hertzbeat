@@ -69,6 +69,7 @@ public class TimerDispatcher implements TimerDispatch {
 
     @Override
     public void addJob(Job addJob, CollectResponseEventListener eventListener) {
+        // job放到WheelTimerTask中，WheelTimerTask放到HashedWheelTimeout中，HashedWheelTimeout放到HashedWheelTimer中。
         WheelTimerTask timerJob = new WheelTimerTask(addJob);
         if (addJob.isCyclic()) {
             Timeout timeout = wheelTimer.newTimeout(timerJob, addJob.getInterval(), TimeUnit.SECONDS);

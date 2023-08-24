@@ -99,6 +99,9 @@ public class HistoryJpaDatabaseDataStorage extends AbstractHistoryDataStorage {
 		}
 	}
 
+	/**
+	 * 将metricsData保存起来，其中收集到的每行记录的每个字段在DB中是一行记录
+	 */
 	@Override
 	void saveData(CollectRep.MetricsData metricsData) {
 		if (metricsData.getCode() != CollectRep.Code.SUCCESS) {
@@ -126,6 +129,7 @@ public class HistoryJpaDatabaseDataStorage extends AbstractHistoryDataStorage {
 				} else {
 					historyBuilder.instance(null);
 				}
+				// 每个metric和metricType构成一个history，放到historyList中
 				for (int i = 0; i < fieldsList.size(); i++) {
 					CollectRep.Field field = fieldsList.get(i);
 					// ignore string value store in db

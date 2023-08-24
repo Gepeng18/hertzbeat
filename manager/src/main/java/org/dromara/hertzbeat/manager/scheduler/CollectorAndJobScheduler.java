@@ -334,14 +334,17 @@ public class CollectorAndJobScheduler implements CollectorScheduling, CollectJob
         jobContentCache.put(jobId, job);
         // todo dispatchKey ip+port or id
         String dispatchKey = String.valueOf(job.getMonitorId());
+        // 根据 monitorId 和 jobId 选择一个搜集节点
         ConsistentHash.Node node = consistentHash.dispatchJob(dispatchKey, jobId);
         if (node == null) {
             log.error("there is no collector online to assign job.");
             return jobId;
         }
+        // 默认搜集器，则将job交给默认搜集器进行执行
         if (CommonConstants.MAIN_COLLECTOR_NODE.equals(node.getName())) {
             collectJobService.addAsyncCollectJob(job);
         } else {
+            // 搜集器扩展，通过netty发给其他的搜集器
             Channel channel = collectorChannelMap.get(node.getName());
             if (channel == null || !channel.isActive()) {
                 collectorChannelMap.remove(node.getName());

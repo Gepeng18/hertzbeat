@@ -89,10 +89,12 @@ public class AppServiceImpl implements AppService, CommandLineRunner {
         if (!StringUtils.hasText(app)) {
             throw new IllegalArgumentException("The app can not null.");
         }
+        // 1、从 ConcurrentHashMap 中 根据 key 获取
         Job appDefine = appDefines.get(app.toLowerCase());
         if (appDefine == null) {
             throw new IllegalArgumentException("The app " + app + " not support.");
         }
+        // 2、 clone
         return appDefine.clone();
     }
 
@@ -297,23 +299,31 @@ public class AppServiceImpl implements AppService, CommandLineRunner {
         boolean loadFromFile = true;
         // 读取监控定义配置加载到内存中 define/*.yml
         Yaml yaml = new Yaml();
+        // 获取类路径下的Url
         URL rootUrl = this.getClass().getClassLoader().getResource("");
         String defineAppPath = null;
         File directory = null;
         if (rootUrl == null) {
+            // 类路径的url如果不为空，则 loadFromFile 算作false
             loadFromFile = false;
         } else {
+            // 加载 类路径下的 define文件夹
             String classpath = rootUrl.getPath();
             defineAppPath = classpath + "define";
             directory = new File(defineAppPath);
+            // 如果类路径下的define文件夹不存在，或者里面没文件
             if (!directory.exists() || directory.listFiles() == null) {
+                // 这是获取根路径？
                 rootUrl = this.getClass().getResource(File.separator);
                 if (rootUrl == null) {
+                    // 根路径获取不到，认栽了
                     loadFromFile = false;
                 } else {
+                    // 读取根路径下的 define文件夹
                     classpath = rootUrl.getPath();
                     defineAppPath = classpath + "define";
                     directory = new File(defineAppPath);
+                    // 如果根路径下的define文件夹不存在，或者里面没文件，就认栽了
                     if (!directory.exists() || directory.listFiles() == null) {
                         loadFromFile = false;
                     }
@@ -324,10 +334,12 @@ public class AppServiceImpl implements AppService, CommandLineRunner {
             try {
                 log.info("load define app yml in internal jar");
                 ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+                // 读取类路径下的define文件夹下的yml文件
                 Resource[] resources = resolver.getResources("classpath:define/*.yml");
                 for (Resource resource : resources) {
                     try {
                         InputStream inputStream = resource.getInputStream();
+                        // 调用 yaml 加载yml文件，并转化成job后添加到appDefines这个ConcurrentHashMap中
                         Job app = yaml.loadAs(inputStream, Job.class);
                         appDefines.put(app.getApp().toLowerCase(), app);
                         inputStream.close();
@@ -341,8 +353,10 @@ public class AppServiceImpl implements AppService, CommandLineRunner {
                 throw e;
             }
         }
+        // 否则
         if (loadFromFile && directory.listFiles() != null) {
             log.info("load define path {}", defineAppPath);
+            // 指定路径的文件夹下有文件，则同样调用 yaml 加载yml文件，并转化成job后添加到appDefines这个ConcurrentHashMap中
             for (File appFile : Objects.requireNonNull(directory.listFiles())) {
                 if (appFile.exists() && appFile.isFile()) {
                     if (appFile.isHidden()

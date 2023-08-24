@@ -83,10 +83,12 @@ public class SchedulerInit implements CommandLineRunner {
                 appDefine.setInterval(monitor.getIntervals());
                 appDefine.setCyclic(true);
                 appDefine.setTimestamp(System.currentTimeMillis());
+                // 从DB取出所有参数
                 List<Param> params = paramDao.findParamsByMonitorId(monitor.getId());
                 List<Configmap> configmaps = params.stream()
                                                      .map(param -> new Configmap(param.getField(), param.getValue(),
                                                              param.getType())).collect(Collectors.toList());
+                // 从appDefine取出所有写了默认值的参数，如果该默认值在DB中未提供，那么就设置到参数中
                 List<ParamDefine> paramDefaultValue = appDefine.getParams().stream()
                                                               .filter(item -> StringUtils.hasText(item.getDefaultValue()))
                                                               .collect(Collectors.toList());
@@ -103,8 +105,10 @@ public class SchedulerInit implements CommandLineRunner {
                 if (StringUtils.hasText(collector)) {
                     jobId = collectJobScheduling.addAsyncCollectJob(appDefine, collector);
                 } else {
+                    // 试用默认的搜集器
                     jobId = collectJobScheduling.addAsyncCollectJob(appDefine);   
                 }
+                // 生成了一个新的job，所以更新到monitor表中
                 monitor.setJobId(jobId);
                 monitorDao.save(monitor);
             } catch (Exception e) {
